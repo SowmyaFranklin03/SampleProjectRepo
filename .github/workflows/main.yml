@@ -1,4 +1,4 @@
-name: .NET CI Pipeline
+name: Build and Deploy .NET Web API project
 on:
  push:
    branches: [ "main" ]
@@ -23,3 +23,30 @@ jobs:
      with:
        name: dotnet-web-app
        path: publish
+ deploy:
+    runs-on: windows-latest
+    needs: build
+    permissions:
+      id-token: write #This is required for requesting the JWT
+      contents: read #This is required for actions/checkout
+
+    steps:
+      - name: Download artifact from build job
+        uses: actions/download-artifact@v4
+        with:
+          name: dotnet-web-app
+      
+      - name: Login to Azure
+        uses: azure/login@v2
+        with:
+          client-id: ${{ secrets.AZUREAPPSERVICE_CLIENTID_0F5E4EAD9FBF4DFFA9619E0C34D5BB5F }}
+          tenant-id: ${{ secrets.AZUREAPPSERVICE_TENANTID_9EBF6DB8F67D42FB86B3B607256D2168 }}
+          subscription-id: ${{ secrets.AZUREAPPSERVICE_SUBSCRIPTIONID_3F4A82FE3BB84319B0A17DE1F386E581 }}
+
+      - name: Deploy to Azure Web App
+        id: deploy-to-webapp
+        uses: azure/webapps-deploy@v3
+        with:
+          app-name: 'samplewebapp-sowmya'
+          slot-name: 'Production'
+          package: .
